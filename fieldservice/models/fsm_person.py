@@ -62,34 +62,35 @@ class FSMPerson(models.Model):
         )
         # Check for args first having location_ids as default filter
         for arg in domain:
-            if isinstance(domain, (list, Domain)) and arg[0] == "location_ids":
-                # If given int search ID, else search name
-                if isinstance(arg[2], int):
-                    self.env.cr.execute(
-                        "SELECT person_id "
-                        "FROM fsm_location_person "
-                        "WHERE location_id=%s",
-                        (arg[2],),
-                    )
-                else:
-                    arg_2 = "%" + arg[2] + "%"
-                    self.env.cr.execute(
-                        "SELECT id FROM fsm_location WHERE complete_name like %s",
-                        (arg_2,),
-                    )
-                    location_ids = self.env.cr.fetchall()
-                    if location_ids:
-                        location_ids = [location[0] for location in location_ids]
+            if isinstance(domain, (list, Domain)):  # noqa: SIM102
+                if arg[0] == "location_ids":
+                    # If given int search ID, else search name
+                    if isinstance(arg[2], int):
                         self.env.cr.execute(
-                            "SELECT DISTINCT person_id "
+                            "SELECT person_id "
                             "FROM fsm_location_person "
-                            "WHERE location_id in %s",
-                            [tuple(location_ids)],
+                            "WHERE location_id=%s",
+                            (arg[2],),
                         )
-                workers_ids = set()
-                for id_ in self.env.cr.fetchall():
-                    workers_ids.add(id_[0])
-                return self.browse(workers_ids)._as_query()
+                    else:
+                        arg_2 = "%" + arg[2] + "%"
+                        self.env.cr.execute(
+                            "SELECT id FROM fsm_location WHERE complete_name like %s",
+                            (arg_2,),
+                        )
+                        location_ids = self.env.cr.fetchall()
+                        if location_ids:
+                            location_ids = [location[0] for location in location_ids]
+                            self.env.cr.execute(
+                                "SELECT DISTINCT person_id "
+                                "FROM fsm_location_person "
+                                "WHERE location_id in %s",
+                                [tuple(location_ids)],
+                            )
+                    workers_ids = set()
+                    for id_ in self.env.cr.fetchall():
+                        workers_ids.add(id_[0])
+                    return self.browse(workers_ids)._as_query()
         return res
 
     @api.model_create_multi

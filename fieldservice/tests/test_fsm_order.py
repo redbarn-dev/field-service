@@ -320,6 +320,13 @@ class TestFSMOrder(FSMCommon):
         # Instead, it should go through the "Complete" button (action_complete).
         self.order.action_complete()
         self.assertEqual(self.order.stage_id, self.stage1)
+        # The stage change is logged with the "Order Completed" subtype
+        self.env.flush_all()
+        self.cr.flush()
+        self.assertIn(
+            self.env.ref("fieldservice.mt_order_completed"),
+            self.order.message_ids.subtype_id,
+        )
 
     def test_order_unlink(self):
         with self.assertRaises(ValidationError):
